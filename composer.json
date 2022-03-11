@@ -1,6 +1,6 @@
 {
     "version": "1.0.6",
-    "name": "brockhaus-ag/contao-release-stages-bundle",
+    "name": "jdwiese/contao-release-stages-bundle",
     "description": "Mit dem Contao Release Stages Bundle der BROCKHAUS AG kannst DU ganz einfach Releases erstellen und auf Deiner Prod-Stage hochladen.",
     "keywords": [
         "contao",

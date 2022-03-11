@@ -1,6 +1,42 @@
 services:
+    _defaults:
+        autoconfigure: true
+        public: true
+
+    BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic:
+        arguments:
+            - '%kernel.project_dir%'
+
+    BrockhausAg\ContaoReleaseStagesBundle\EventListener\DataContainer\tl_release_stages:
+        arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\Database\DatabaseLogic'
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\Database\CopyToDatabaseLogic'
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\FileServer\CopyToFileServerLogic'
+
+    BrockhausAg\ContaoReleaseStagesBundle\Logic\Database\DatabaseLogic:
+        arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic'
+
+    BrockhausAg\ContaoReleaseStagesBundle\Logic\Database\CopyToDatabaseLogic:
+        arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic'
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\Database\ProdDatabaseLogic'
+
+    BrockhausAg\ContaoReleaseStagesBundle\Logic\Database\ProdDatabaseLogic:
+        arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic'
+
+    BrockhausAg\ContaoReleaseStagesBundle\Logic\FileServer\LoadFromLocalLogic:
+        arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic'
+
+    BrockhausAg\ContaoReleaseStagesBundle\Logic\FileServer\CopyToFileServerLogic:
+        arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic'
+
     BrockhausAg\ContaoReleaseStagesBundle\Logic\CopyToFileServerLogic:
         arguments:
+            - '@BrockhausAg\ContaoReleaseStagesBundle\Logic\IOLogic'
             - '@logger'
         public: true
         calls:

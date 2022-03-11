@@ -14,12 +14,18 @@ declare(strict_types=1);
 
 namespace BrockhausAg\ContaoReleaseStagesBundle\Logic\FileServer;
 
+use Exception;
+
 class CopyToLocalFileServerLogic {
     public function createDirectory(string $directory) : void
     {
+        if (file_exists($directory)) {
+            return;
+        }
+
         if (!@mkdir($directory)) {
             $error = error_get_last();
-            die("mkdir error: ". $error['message']);
+            throw new Exception(sprintf("mkdir(%s) failed: %s", $directory, $error['message']));
         }
     }
 

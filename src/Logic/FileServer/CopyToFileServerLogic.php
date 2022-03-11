@@ -29,18 +29,19 @@ class CopyToFileServerLogic extends Backend {
 
     private string $copyTo;
 
-    public function __construct()
+    public function __construct(IOLogic $IOLogic)
     {
-        $this->_ioLogic = new IOLogic();
+        parent::__construct();
+        $this->_ioLogic = $IOLogic;
         $this->_copyToLocalFileServerLogic = new CopyToLocalFileServerLogic();
-        $this->_databaseLogic = new DatabaseLogic();
+        $this->_databaseLogic = new DatabaseLogic($this->_ioLogic);
     }
 
     public function copyToFileServer() : void
     {
         $this->copyTo = $this->_ioLogic->checkWhereToCopy();
-        $path = $this->getPathToCopy();
-        $loadFromLocalLogic = new LoadFromLocalLogic($this->_ioLogic->loadPathToContaoFiles(), $path);
+        $prodPath = $this->getPathToCopy();
+        $loadFromLocalLogic = new LoadFromLocalLogic($this->_ioLogic->getPathToContaoFiles(), $prodPath, $this->_ioLogic);
         $files = $loadFromLocalLogic->loadFromLocal();
 
         $this->createDirectories($files);
@@ -52,7 +53,7 @@ class CopyToFileServerLogic extends Backend {
     private function getPathToCopy() : string
     {
        if ($this->isToCopyToLocalFileServer()) {
-            return $this->_ioLogic->loadLocalFileServerConfiguration()["contaoProdPath"];
+            return $this->_ioLogic->getLocalFileServerPathToContaoFiles();
         }else if ($this->isToCopyToFTPFileServer()) {
             $ftpConnection = new FTPConnection();
             $this->_copyToFTPFileServerLogic = new CopyToFTPFileServerLogic($ftpConnection->connect());
@@ -87,15 +88,9 @@ class CopyToFileServerLogic extends Backend {
 
     private function getDirectoriesFromFilePath(string $file) : array
     {
-        $directoriesSeparate = explode("/", $file);
-        array_splice($directoriesSeparate, 0, 1);
-        $directories = array();
-        for ($x = 1; $x != sizeof($directoriesSeparate); $x++) {
-            $directory = "";
-            for ($y = 0; $y != $x; $y++) {
-                $directory .= "/". $directoriesSeparate[$y];
-            }
-            $directories[] = $directory;
+        $directoriesSeparate = explode("/", dirname($file));
+        for ($level = 1; $level < count($directoriesSeparate); $level++) {
+            $directories[] = implode('/', array_slice($directoriesSeparate, 0, $level + 1));
         }
         return $directories;
     }

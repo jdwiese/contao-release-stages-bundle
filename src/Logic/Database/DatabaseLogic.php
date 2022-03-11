@@ -20,6 +20,14 @@ use Contao\Database\Result;
 
 class DatabaseLogic extends Backend
 {
+    private IOLogic $IOLogic;
+
+    public function __construct(IOLogic $IOLogic)
+    {
+        parent::__construct();
+        $this->IOLogic = $IOLogic;
+    }
+
     public function getLastRows(int $count, array $columns, string $tableName) : Result
     {
         return $this->Database
@@ -28,11 +36,17 @@ class DatabaseLogic extends Backend
             ->execute();
     }
 
-    public function getLastRowsWithWhereStatement(array $columns, string $tableName, string $whereStatement) : Result
+    public function getLastRowsWithWhereStatement(array $columns, string $tableName, array $arrConditions, array $values) : Result
     {
-        return $this->Database->prepare("SELECT ". implode(", ", $columns). " FROM ". $tableName.
-            " WHERE ". $whereStatement)
-            ->execute();
+        $query = sprintf(
+            'SELECT %s FROM %s WHERE %s',
+            implode(", ", $columns),
+            $tableName,
+            implode(' AND ', $arrConditions)
+        );
+        return $this->Database
+            ->prepare($query)
+            ->execute($values);
     }
 
     public function countRows($toCount) : int
@@ -68,9 +82,17 @@ class DatabaseLogic extends Backend
 
     private function getTableNamesFromDatabase(string $testStageDatabaseName) : array
     {
-        $tables = $this->Database->prepare("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES ".
-            "WHERE TABLE_SCHEMA = \"". $testStageDatabaseName. "\" AND TABLE_NAME LIKE \"tl_%\";")
-            ->execute();
+        $query = <<<SQL
+SELECT TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = ?
+  AND TABLE_NAME LIKE ?
+ORDER BY TABLE_NAME
+SQL;
+
+        $tables = $this->Database
+            ->prepare($query)
+            ->execute($testStageDatabaseName, 'tl_%');
         $ignoredTables = $this->getIgnoredTables();
         $tableNames = array();
         while ($tables->next()) {
@@ -84,7 +106,7 @@ class DatabaseLogic extends Backend
 
     private function getIgnoredTables() : array
     {
-        $ioLogic = new IOLogic();
+        $ioLogic = $this->IOLogic;
         return $ioLogic->loadDatabaseIgnoredTablesConfiguration();
     }
 

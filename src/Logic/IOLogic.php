@@ -14,10 +14,35 @@ declare(strict_types=1);
 
 namespace BrockhausAg\ContaoReleaseStagesBundle\Logic;
 
-DEFINE("SETTINGS_PATH", "/html/contao/settings/brockhaus-ag/contao-release-stages-bundle/");
-DEFINE("CONFIG_FILE", "config.json");
+use Exception;
 
 class IOLogic {
+    const SETTINGS_PATH = "config/brockhaus-ag/contao-release-stages-bundle";
+    const CONFIG_FILE = "config.json";
+
+    private $configuration;
+    private string $projectDir;
+
+    public function __construct(string $projectDir)
+    {
+        $this->projectDir = $projectDir;
+    }
+
+    private function getConfigPath()
+    {
+        $settingsPath = $this->projectDir .DIRECTORY_SEPARATOR . self::SETTINGS_PATH;
+        if (!is_readable($settingsPath)) {
+            throw new Exception('Settings path could not be found or is not readable: ' . $settingsPath);
+        }
+
+        $configPath = $settingsPath . DIRECTORY_SEPARATOR . self::CONFIG_FILE;
+        if (!is_readable($configPath)) {
+            throw new Exception('Config file could not be found or is not readable: ' . $configPath);
+        }
+
+        return realpath($configPath);
+    }
+
     private function checkIfFileExists(string $file)
     {
         if (!file_exists($file)) {
@@ -36,22 +61,48 @@ class IOLogic {
 
     private function loadConfiguration() : array
     {
-        return $this->loadJsonFileAndDecode(SETTINGS_PATH. CONFIG_FILE);
+        $this->configuration = $this->loadJsonFileAndDecode($this->getConfigPath());
+        return $this->configuration;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getConfiguration(string $key = null)
+    {
+        if (is_null($this->configuration)) {
+            $this->loadConfiguration();
+        }
+
+        if (is_null($key)) {
+            return $this->configuration;
+        }
+
+        if (!array_key_exists($key, $this->configuration)) {
+            throw new Exception('Konfigurationswert existiert nicht: ' . $key);
+        }
+
+        return $this->configuration[$key];
     }
 
     private function loadContaoPath() : string
     {
-        return $this->loadConfiguration()["contaoPath"];
+        return $this->getConfiguration("contaoPath");
     }
 
-    public function loadPathToContaoFiles() : string
+    private function getLocalContaoPath(string $folder) : string
     {
-        return $this->loadContaoPath(). "files";
+        return $this->getConfiguration("contaoPath") . DIRECTORY_SEPARATOR . $folder;
+    }
+
+    public function getPathToContaoFiles() : string
+    {
+        return $this->getLocalContaoPath("files");
     }
 
     public function loadDatabaseConfiguration() : array
     {
-        return $this->loadConfiguration()["database"];
+        return $this->getConfiguration("database");
     }
 
     public function loadTestStageDatabaseName() : string
@@ -68,26 +119,53 @@ class IOLogic {
 
     public function loadDNSRecords() : array
     {
-        return $this->loadConfiguration()["dnsRecords"];
+        return $this->getConfiguration("dnsRecords");
     }
 
     public function checkWhereToCopy() : string
     {
-        return $this->loadConfiguration()["copyTo"];
+        return $this->getConfiguration("copyTo");
     }
 
     public function loadFileServerConfiguration() : array
     {
-        return $this->loadConfiguration()["fileServer"];
+        return $this->getConfiguration("fileServer");
     }
 
     public function loadLocalFileServerConfiguration() : array
     {
-        return $this->loadConfiguration()["local"];
+        return $this->getConfiguration("local");
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function getLocalFileServerConfiguration(string $key = null)
+    {
+        $config = $this->getConfiguration("local");
+        if (is_null($key)) {
+            return $config;
+        }
+
+        if (!array_key_exists($key, $config)) {
+            throw new Exception('Konfigurationswert existiert nicht: ' . $key);
+        }
+
+        return $config[$key];
+    }
+
+    private function getLocalFileServerContaoPath(string $folder) : string
+    {
+        return $this->getLocalFileServerConfiguration("contaoProdPath") . DIRECTORY_SEPARATOR . $folder;
+    }
+
+    public function getLocalFileServerPathToContaoFiles() : string
+    {
+        return $this->getLocalFileServerContaoPath("files");
     }
 
     public function loadFileFormats() : array
     {
-        return $this->loadConfiguration()["fileFormats"];
+        return $this->getConfiguration("fileFormats");
     }
 }
