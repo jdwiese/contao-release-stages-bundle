@@ -37,7 +37,9 @@
         "ext-curl": "*",
         "ext-json": "*",
         "ext-mysqli": "*",
-        "ext-ftp": "*",
+        "ext-ftp": "*"
+    },
+    "suggests": {
         "ext-ssh2": "*"
     },
     "require-dev": {
